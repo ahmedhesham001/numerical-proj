@@ -6,7 +6,7 @@ import { secant } from "./SolverEngine"
 import { fixedPoint } from "./SolverEngine"
 import { derivative, evaluate } from "mathjs";
 
-function App() {
+function Numerical() {
   const [inputs, setInputs] = useState({ func: "", xl: "", xu: "", x0: "", x1: "", tol: "", method: "falsePosition" });
   const [results, setResults] = useState([]);
   function solve() {
@@ -95,4 +95,4 @@ function App() {
   )
 }
 
-export default App;
+export default Numerical;

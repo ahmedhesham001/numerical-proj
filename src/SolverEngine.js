@@ -1,3 +1,4 @@
+import { parse } from "mathjs";
 const bisection = (f, xl, xu, tol) => {
     let iteration = [];
     let xr = (xl + xu) / 2;
@@ -130,6 +131,63 @@ const fixedPoint = (g, x0, tol) => {
     return iteration;
 }
 
-// console.log(falsePosition((x) => -26+82.3*x-88*x**2+45.4*x**3-9*x**4+0.65*x**5, 0.5, 1, 0.002));
+// Guass Elimination 
 
-export {bisection, falsePosition, newtonRaphson, secant, fixedPoint};
+const parseEquation = (eq) => {
+    const A =[];
+    const B = [];
+    const variables = ['x','y','z']
+    eq.forEach((equation) =>{
+        const [left, right] = equation.split('=');
+        B.push(parseFloat(right));
+        const node = parse(left);
+        const row = [];
+        variables.forEach( v =>{
+            const coeff = node.evaluate(
+                {[v]: 1, ...variables.filter(varName => varName !== v).reduce((acc, varName) => (
+                    {...acc, [varName]: 0}
+                ),{})
+                })
+                row.push(coeff);
+        });
+        A.push(row);
+    });
+    return [A, B];
+}
+const guassElimination = (A, B) => {
+    let n = A.length;
+    for (let i = 0; i < n; i++) {
+        let mxRow = i;
+        for (let j = i + 1; j < n; j++) {
+            if (Math.abs(A[j][i]) > Math.abs(A[mxRow][i])) {
+                mxRow = j;
+            }
+        }
+        
+        [A[i], A[mxRow]] = [A[mxRow], A[i]];
+        [B[i], B[mxRow]] = [B[mxRow], B[i]];
+        if(Math.abs(A[i][i])<1e-10){
+            alert("Matrix is singular!");
+            return [];
+        }
+        let pivot = A[i][i];
+        for (let j = i; j < n; j++) A[i][j]/=pivot;
+        B[i]/=pivot;
+        // Eliminate other rows (Forward Elimination)
+        for (let k = 0; k < n; k++) {
+            if(k!==i){
+                let factor = A[k][i];
+                for (let j = 0; j < n; j++) {
+                    A[k][j] -= factor * A[i][j];
+                }
+                B[k] -= factor * B[i];
+            }
+        }
+
+    }
+    
+    
+    return B;
+}
+
+export {bisection, falsePosition, newtonRaphson, secant, fixedPoint, guassElimination, parseEquation};
