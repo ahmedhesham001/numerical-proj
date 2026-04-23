@@ -1,121 +1,98 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useState } from "react"
+import { falsePosition } from "./SolverEngine"
+import { bisection } from "./SolverEngine"
+import { newtonRaphson } from "./SolverEngine"
+import { secant } from "./SolverEngine"
+import { fixedPoint } from "./SolverEngine"
+import { derivative, evaluate } from "mathjs";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [inputs, setInputs] = useState({ func: "", xl: "", xu: "", x0: "", x1: "", tol: "", method: "falsePosition" });
+  const [results, setResults] = useState([]);
+  function solve() {
+    const requiredKeys = methodRequirements[inputs.method]; 
+    for(let key of requiredKeys) {
+      if(!inputs[key]) { 
+        alert(`Please fill the ${key} field!`); 
+        return; 
+      }
+    }
+    const normalizedFunc = inputs.func.replace(/\*\*/g, '^'); 
+    const f = (x) => evaluate(normalizedFunc, { x: x });
+    const dfString = derivative(normalizedFunc, "x").toString();
+    const df = (x) => {
+      try{
+        return evaluate(dfString, {x:x});
+      }catch(e){
+        console.log(e);
+        return 0;
+      }
+    };
+    const solvers = {
+      bisection: () => bisection(f, parseFloat(inputs.xl), parseFloat(inputs.xu), parseFloat(inputs.tol)),
+      falsePosition: () => falsePosition(f, parseFloat(inputs.xl), parseFloat(inputs.xu), parseFloat(inputs.tol)),
+      newtonRaphson: () => newtonRaphson(f,df, parseFloat(inputs.x0), parseFloat(inputs.tol)),
+      secant: () => secant(f, parseFloat(inputs.x0), parseFloat(inputs.x1), parseFloat(inputs.tol)),
+      fixedPoint: () => fixedPoint(f, parseFloat(inputs.x0), parseFloat(inputs.tol))
+    };
 
+    const data = solvers[inputs.method]();
+    setResults(data);
+    setInputs({ func: "", xl: "", xu: "", x0: "", x1: "", tol: "", method: inputs.method });
+  }
+  const methodRequirements = {
+  bisection: ["func", "xl", "xu", "tol"],
+  falsePosition: ["func", "xl", "xu", "tol"],
+  newtonRaphson: ["func", "x0", "tol"],
+  secant: ["func", "x0", "x1", "tol"],
+  fixedPoint: ["func", "x0", "tol"],
+};
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+    <div style={{display: "flex",flexDirection: "column",alignItems: "center",justifyContent: "center", gap: "1rem"}}>
+      <h1>Numerical Methods</h1>
+      <div style={{display: "flex",gap: "1rem",justifyContent: "center",alignItems: "center",flexDirection: "row"}}>
+        {Object.keys(methodRequirements).map((m) => (
+          <button 
+            key={m} 
+            onClick={() => setInputs({ ...inputs, method: m })}
+            className={inputs.method === m ? 'active' : ''}
+          >
+            {m}
+          </button>
+        ))}
+      </div>
+      <h2>Enter the values for {inputs.method}:</h2>
+      <form action="" style={{display: "flex",gap: "1rem",justifyContent: "center",alignItems: "center",flexDirection: "row",marginBottom: "2rem"}}>
+        {methodRequirements[inputs.method].map((input) => (
+          <input key={input} placeholder={input} value={inputs[input]} onChange={(e) => setInputs({ ...inputs, [input]: e.target.value })} />
+        ))}
+        <button type="button" onClick={() => solve()}>Solve</button>
+      </form>
+      {results.length > 0 ?(
+        <div style={{display: "flex",justifyContent: "center",alignItems: "center",flexDirection: "column", gap: "1rem",marginTop: "1rem"}}>
+        <table style={{ borderCollapse: "collapse", width: "100%", maxWidth: "800px" }}>
+          <thead>
+            <tr style={{borderBottom: "2px solid #ccc"}}>
+              {results.length > 0 && Object.keys(results[0]).map((key) => (
+                <th key={key} style={{padding: "12px", textAlign: "center"}}>{key}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {results.map((row, index) => (
+              <tr key={index} style={{ borderBottom: "1px solid #444" }}>
+                {Object.values(row).map((val, i) => (
+                  <td key={i} style={{padding: "15px", textAlign: "left"}}>{typeof val === 'number' && i > 0 && val!=results[results.length - 1].xr ? val.toFixed(4) : val===results[results.length - 1].xr ? <span style={{fontWeight: "bold", color: "#4CAF50"}}>{val.toFixed(4)}</span> : val}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <h2>xr = {results[results.length - 1].xr.toFixed(4)}</h2>
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+      ):(<p>No results</p>)}
+    </div>
   )
 }
 
-export default App
+export default App;
