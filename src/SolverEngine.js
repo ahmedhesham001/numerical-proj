@@ -1,4 +1,5 @@
 import { parse } from "mathjs";
+import * as math from "mathjs";
 const bisection = (f, xl, xu, tol) => {
     let iteration = [];
     let xr = (xl + xu) / 2;
@@ -190,4 +191,67 @@ const guassElimination = (A, B) => {
     return B;
 }
 
-export {bisection, falsePosition, newtonRaphson, secant, fixedPoint, guassElimination, parseEquation};
+// Cramer Rule 
+const cramerRule = (A,B) => {
+    const n = A.length;
+    let D = math.det(A);
+    if(Math.abs(D)<1e-10){
+        alert("Matrix is singular!");
+        return [];
+    }
+    let solutions = [];
+    for (let i = 0; i < n; i++) {
+        let Ai = A.map(row => [...row]);
+        for (let j = 0; j <n; j++) {
+            Ai[j][i] = B[j];
+        }
+        solutions.push(math.det(Ai)/D);
+    }
+    return solutions;
+};
+
+// LU Decomposition
+const luDecomposition = (A, B) => {
+    const n = A.length;
+    let L = math.zeros(n, n).toArray();
+    let U = math.zeros(n, n).toArray();
+    for (let i = 0; i < n; i++) {
+        L[i][i] = 1;
+    }
+    for (let i = 0; i < n; i++) {
+        for (let j = i; j < n; j++) {
+            U[i][j] = A[i][j];
+            for (let k = 0; k < i; k++) {
+                U[i][j] -= L[i][k] * U[k][j];
+            }
+        }
+        for (let j = i + 1; j < n; j++) {
+            L[j][i] = A[j][i];
+            for (let k = 0; k < i; k++) {
+                L[j][i] -= L[j][k] * U[k][i];
+            }
+            L[j][i] /= U[i][i];
+        }
+    }
+    let y = new Array(n).fill(0);
+    for (let i = 0; i < n; i++) {
+        let sum = 0;
+        for (let j = 0; j < i; j++) {
+            sum += L[i][j] * y[j];
+        }
+        y[i] = B[i] - sum; 
+    }
+    let x = new Array(n).fill(0);
+    for (let i = n-1; i >= 0; i--) {
+        let sum = 0;
+        for (let j = i+1; j < n; j++) {
+            sum += U[i][j] * x[j];
+        }
+        x[i] = (y[i] - sum) / U[i][i];
+    }
+    return x;
+
+};
+
+
+export {bisection, falsePosition, newtonRaphson, secant, fixedPoint, guassElimination, parseEquation, cramerRule, luDecomposition};
